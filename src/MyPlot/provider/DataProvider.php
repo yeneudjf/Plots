@@ -62,6 +62,8 @@ abstract class DataProvider
 	 */
 	public abstract function getPlotsByOwner(string $owner, string $levelName = "") : array;
 
+	public abstract function getAllPlots(string $levelName = "") : array;
+
 	public abstract function getNextFreePlot(string $levelName, int $limitXZ = 0) : ?Plot;
 
 	public abstract function close() : void;

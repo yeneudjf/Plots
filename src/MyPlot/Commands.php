@@ -23,6 +23,7 @@ use MyPlot\subcommand\HelpSubCommand;
 use MyPlot\subcommand\HomesSubCommand;
 use MyPlot\subcommand\HomeSubCommand;
 use MyPlot\subcommand\InfoSubCommand;
+use MyPlot\subcommand\RentSubCommand;
 use MyPlot\subcommand\KickSubCommand;
 use MyPlot\subcommand\ListSubCommand;
 use MyPlot\subcommand\MergeSubCommand;
@@ -96,6 +97,9 @@ class Commands extends Command implements PluginOwned
         $this->loadSubCommand(new HomeSubCommand($plugin, "home"));
         $this->loadSubCommand(new HomesSubCommand($plugin, "homes"));
         $this->loadSubCommand(new InfoSubCommand($plugin, "info"));
+		if($plugin->getEconomyProvider() !== null) {
+			$this->loadSubCommand(new RentSubCommand($plugin, "rent"));
+		}
         $this->loadSubCommand(new KickSubCommand($plugin, "kick"));
 		$this->loadSubCommand(new ListSubCommand($plugin, "list"));
 		$this->loadSubCommand(new MergeSubCommand($plugin, "merge"));

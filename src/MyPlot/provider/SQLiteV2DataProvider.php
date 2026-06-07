@@ -162,6 +162,34 @@ class SQLiteV2DataProvider extends DataProvider
 		return $plots;
 	}
 
+	public function getAllPlots(string $levelName = "") : array {
+		$plots = [];
+		$query = "SELECT * FROM plotsV2";
+		if($levelName !== "") {
+			$query .= " WHERE level = :level";
+		}
+		$stmt = $this->db->prepare($query);
+		if($stmt === false) {
+			return $plots;
+		}
+		if($levelName !== "") {
+			$stmt->bindValue(":level", $levelName, SQLITE3_TEXT);
+		}
+		$stmt->reset();
+		$result = $stmt->execute();
+		while($result !== false and ($val = $result->fetchArray(SQLITE3_ASSOC)) !== false) {
+			$helpers = $val["helpers"] === null or $val["helpers"] === "" ? [] : explode(",", (string) $val["helpers"]);
+			$denied = $val["denied"] === null or $val["denied"] === "" ? [] : explode(",", (string) $val["denied"]);
+			$pvp = is_numeric($val["pvp"]) ? (bool)$val["pvp"] : null;
+			$merged_plots = $val["merged_plots"] === null or $val["merged_plots"] === "" ? [] : explode(",", (string) $val["merged_plots"]);
+            if ($val['flags'] === '{}' or $val['flags'] === '' or $val['flags'] === null) {
+                $flags = [];
+            } else $flags = json_decode($val['flags'], true);
+			$plots[] = new Plot((string) $val["level"], (int) $val["X"], (int) $val["Z"], (string) $val["name"], (string) $val["owner"], $helpers, $denied, (string) $val["biome"], $pvp, (float) $val["price"], $merged_plots, $flags);
+		}
+		return $plots;
+	}
+
 	public function getNextFreePlot(string $levelName, int $limitXZ = 0) : ?Plot {
 		$this->sqlGetExistingXZ->bindValue(":level", $levelName, SQLITE3_TEXT);
 		$i = 0;

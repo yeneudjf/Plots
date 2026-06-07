@@ -37,11 +37,27 @@ class InfoForm extends SimpleMyPlotForm {
 			}
 		}
 		$flags = implode(", ", $flag_names);
-		parent::__construct(
-		    MyPlot::getInstance()->getLanguage()->translateString("info.title"),
+        $options = [];
+        if(MyPlot::getInstance()->isRentalEnabled() && $this->plot->owner !== "") {
+            $options[] = MyPlot::getInstance()->getLanguage()->get("rent.info.button");
+        }
+        $options[] = MyPlot::getInstance()->getLanguage()->get("form.close");
+
+        parent::__construct(
+            MyPlot::getInstance()->getLanguage()->translateString("info.title"),
             MyPlot::getInstance()->getLanguage()->translateString("info.content", [$this->plot, $owner, $description, $this->plot->name, $helpers, $denied, $flags]),
-            [],
-            function(Player $submitter, int $selected) : void {},
+            $options,
+            function(Player $submitter, int $selected) : void {
+                $plugin = MyPlot::getInstance();
+                $idx = 0;
+                if($plugin->isRentalEnabled() && $this->plot->owner !== "") {
+                    if($selected === $idx) {
+                        $submitter->sendForm(new \MyPlot\forms\subforms\RentInfoForm($submitter));
+                        return;
+                    }
+                    $idx++;
+                }
+            },
             function () : void {}
         );
 	}

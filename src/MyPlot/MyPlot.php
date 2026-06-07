@@ -26,6 +26,7 @@ use MyPlot\task\ChangeBorderTask;
 use MyPlot\task\ClearBorderTask;
 use MyPlot\task\ClearPlotTask;
 use MyPlot\task\MergePlotTast;
+use MyPlot\task\RentalBillingTask;
 use MyPlot\utils\Border;
 use MyPlot\utils\Flags;
 use MyPlot\utils\Wall;
@@ -531,18 +532,26 @@ class MyPlot extends PluginBase
 	 *
 	 * @return bool
 	 */
-	public function claimPlot(Plot $plot, string $claimer, string $plotName = "") : bool {
+	public function claimPlot(Plot $plot, string $claimer, string $plotName = "", string $plotType = "") : bool {
 		$newPlot = clone $plot;
 		$newPlot->owner = $claimer;
+		$originalPrice = $newPlot->price;
+		$newPlot->flags["rental.purchase_price"] = $originalPrice;
 		$newPlot->price = 0.0;
+		if($plotName !== "") {
+			$newPlot->name = $plotName;
+		}
+		if($plotType !== "") {
+			$newPlot->flags["plot.type"] = $plotType;
+		}
 		$ev = new MyPlotSettingEvent($plot, $newPlot);
 		$ev->call();
 		if($ev->isCancelled()) {
 			return false;
 		}
 		$plot = $ev->getPlot();
-		if($plotName !== "") {
-			$this->renamePlot($plot, $plotName);
+		if($this->isRentalEnabled()) {
+			$this->initializePlotRental($plot);
 		}
         $plotsquared = new Config($this->getDataFolder() . "plotsquaredpm.yml");
 		$claimBorder = $plotsquared->get("ClaimBorder", "quartz_slab");
@@ -943,10 +952,12 @@ class MyPlot extends PluginBase
 		if($this->getEconomyProvider() === null or !$this->getEconomyProvider()->reduceMoney($player, $plot->price) or !$this->getEconomyProvider()->addMoney($this->getServer()->getOfflinePlayer($plot->owner), $plot->price))
 			return false;
 
+		$originalPrice = $plot->price;
 		$newPlot = clone $plot;
 		$newPlot->owner = $player->getName();
 		$newPlot->helpers = [];
 		$newPlot->denied = [];
+		$newPlot->flags["rental.purchase_price"] = $originalPrice;
 		$newPlot->price = 0.0;
 		$ev = new MyPlotSettingEvent($plot, $newPlot);
 		$ev->call();
@@ -954,7 +965,104 @@ class MyPlot extends PluginBase
 			return false;
 		}
 		$plot = $ev->getPlot();
+		if($this->isRentalEnabled()) {
+			$this->initializePlotRental($plot);
+		}
 		return $this->savePlot($plot);
+	}
+
+	public function isRentalEnabled() : bool {
+		return $this->getConfig()->getNested("RentalSystem.Enabled", false) === true;
+	}
+
+	public function getRentalPeriodSeconds() : int {
+		return max(1, (int)$this->getConfig()->getNested("RentalSystem.PaymentPeriodDays", 7) * 86400);
+	}
+
+	public function getGracePeriodSeconds() : int {
+		return max(0, (int)$this->getConfig()->getNested("RentalSystem.GracePeriodDays", 3) * 86400);
+	}
+
+	public function getDefaultPlotType() : string {
+		return (string)$this->getConfig()->getNested("RentalSystem.DefaultPlotType", "small");
+	}
+
+	public function getRentAmountForPlot(Plot $plot) : float {
+		$type = $plot->getPlotType();
+		if($type === "") {
+			$type = $this->getDefaultPlotType();
+		}
+		$plotTypes = $this->getConfig()->getNested("RentalSystem.PlotTypes", []);
+		if(isset($plotTypes[$type]["RentPrice"])) {
+			return (float)$plotTypes[$type]["RentPrice"];
+		}
+		return $plot->price > 0 ? $plot->price : 0.0;
+	}
+
+	public function initializePlotRental(Plot $plot) : void {
+		$type = $plot->getPlotType();
+		if($type === "") {
+			$type = $this->getDefaultPlotType();
+			$plot->flags["plot.type"] = $type;
+		}
+		$plot->flags["rental.amount"] = $this->getRentAmountForPlot($plot);
+		$plot->flags["rental.status"] = Plot::RENT_STATUS_ACTIVE;
+		$plot->flags["rental.due"] = time() + $this->getRentalPeriodSeconds();
+		$plot->flags["rental.grace_until"] = 0;
+		if($plot->getPurchasePrice() === 0.0 && $plot->price > 0.0) {
+			$plot->flags["rental.purchase_price"] = $plot->price;
+		}
+	}
+
+	public function processPlotRentals() : void {
+		if(!$this->isRentalEnabled()) {
+			return;
+		}
+		$plots = $this->dataProvider->getAllPlots();
+		$now = time();
+		foreach($plots as $plot) {
+			if($plot->owner === "") {
+				continue;
+			}
+			if($plot->getRentalStatus() === Plot::RENT_STATUS_AVAILABLE) {
+				continue;
+			}
+			$due = $plot->getRentalDue();
+			if($due === 0) {
+				$plot->flags["rental.due"] = $now + $this->getRentalPeriodSeconds();
+				$this->savePlot($plot);
+				continue;
+			}
+			if($due > $now) {
+				continue;
+			}
+			$owner = $this->getServer()->getPlayerExact($plot->owner);
+			$amount = $plot->getRentAmount();
+			if($owner instanceof Player && $this->getEconomyProvider() !== null && $this->getEconomyProvider()->reduceMoney($owner, $amount)) {
+				$plot->flags["rental.status"] = Plot::RENT_STATUS_ACTIVE;
+				$plot->flags["rental.due"] = $now + $this->getRentalPeriodSeconds();
+				$plot->flags["rental.grace_until"] = 0;
+				$this->savePlot($plot);
+				$owner->sendMessage(self::getPrefix() . TextFormat::GREEN . "Your plot rent has been charged: $" . number_format($amount, 2));
+				continue;
+			}
+			if($plot->getRentalStatus() !== Plot::RENT_STATUS_DELINQUENT) {
+				$plot->flags["rental.status"] = Plot::RENT_STATUS_DELINQUENT;
+				$plot->flags["rental.grace_until"] = $now + $this->getGracePeriodSeconds();
+				$this->savePlot($plot);
+				if($owner instanceof Player) {
+					$owner->sendMessage(self::getPrefix() . TextFormat::RED . "Your plot is now delinquent. You have " . $this->getGracePeriodSeconds() / 86400 . " days to pay before it expires.");
+				}
+				continue;
+			}
+			$grace = $plot->getRentGraceUntil();
+			if($grace > 0 && $now >= $grace) {
+				$this->disposePlot($plot);
+				if($owner instanceof Player) {
+					$owner->sendMessage(self::getPrefix() . TextFormat::RED . "Your plot has expired due to unpaid rent.");
+				}
+			}
+		}
 	}
 
 	/**
@@ -1204,6 +1312,9 @@ class MyPlot extends PluginBase
         }
 
         self::$prefix = $plotsquared->get("prefix", "§l§aP2 §r");
+		if($this->isRentalEnabled()) {
+			$this->getScheduler()->scheduleRepeatingTask(new RentalBillingTask($this), 20 * 60 * 60 * 24);
+		}
 	}
 
 	public function addLevelSettings(string $levelName, PlotLevelSettings $settings) : bool {

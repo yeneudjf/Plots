@@ -23,8 +23,12 @@ class ClaimSubCommand extends SubCommand
 	 */
 	public function execute(CommandSender $sender, array $args) : bool {
 		$name = "";
+		$type = "";
 		if(isset($args[0])) {
 			$name = $args[0];
+		}
+		if(isset($args[1])) {
+			$type = strtolower($args[1]);
 		}
 		$plot = $this->getPlugin()->getPlotByPosition($sender->getPosition());
 		if($plot === null) {
@@ -56,7 +60,14 @@ class ClaimSubCommand extends SubCommand
 			$sender->sendMessage(MyPlot::getPrefix() . TextFormat::RED . $this->translateString("claim.nomoney"));
 			return true;
 		}
-		if($this->getPlugin()->claimPlot($plot, $sender->getName(), $name)) {
+		if($type !== "" && $this->getPlugin()->isRentalEnabled()) {
+			$plotTypes = $this->getPlugin()->getConfig()->getNested("RentalSystem.PlotTypes", []);
+			if(!isset($plotTypes[$type])) {
+				$sender->sendMessage(MyPlot::getPrefix() . TextFormat::RED . $this->translateString("claim.invalidtype", [$type]));
+				return true;
+			}
+		}
+		if($this->getPlugin()->claimPlot($plot, $sender->getName(), $name, $type)) {
 			$sender->sendMessage(MyPlot::getPrefix() . $this->translateString("claim.success"));
 		}else{
 			$sender->sendMessage(MyPlot::getPrefix() . TextFormat::RED . $this->translateString("error"));

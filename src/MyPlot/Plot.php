@@ -20,6 +20,11 @@ class Plot
     public array $flags = [];
 	public int $id = -1;
 
+	public const RENT_STATUS_AVAILABLE = "available";
+	public const RENT_STATUS_ACTIVE = "active";
+	public const RENT_STATUS_DELINQUENT = "delinquent";
+	public const RENT_STATUS_EXPIRED = "expired";
+
 	/**
 	 * Plot constructor.
 	 *
@@ -248,6 +253,60 @@ class Plot
 		foreach($this->denied as $denied){
 			$plot->denyPlayer($denied);
 		}
+	}
+
+	public function getRentalStatus() : string {
+		return (string)($this->flags["rental.status"] ?? self::RENT_STATUS_AVAILABLE);
+	}
+
+	public function setRentalStatus(string $status) : bool {
+		$this->flags["rental.status"] = $status;
+		return MyPlot::getInstance()->savePlot($this);
+	}
+
+	public function getRentalDue() : int {
+		return (int)($this->flags["rental.due"] ?? 0);
+	}
+
+	public function setRentalDue(int $timestamp) : bool {
+		$this->flags["rental.due"] = $timestamp;
+		return MyPlot::getInstance()->savePlot($this);
+	}
+
+	public function getRentAmount() : float {
+		return (float)($this->flags["rental.amount"] ?? 0.0);
+	}
+
+	public function setRentAmount(float $amount) : bool {
+		$this->flags["rental.amount"] = $amount;
+		return MyPlot::getInstance()->savePlot($this);
+	}
+
+	public function getPurchasePrice() : float {
+		return (float)($this->flags["rental.purchase_price"] ?? 0.0);
+	}
+
+	public function setPurchasePrice(float $price) : bool {
+		$this->flags["rental.purchase_price"] = $price;
+		return MyPlot::getInstance()->savePlot($this);
+	}
+
+	public function getPlotType() : string {
+		return (string)($this->flags["plot.type"] ?? "");
+	}
+
+	public function setPlotType(string $type) : bool {
+		$this->flags["plot.type"] = $type;
+		return MyPlot::getInstance()->savePlot($this);
+	}
+
+	public function getRentGraceUntil() : int {
+		return (int)($this->flags["rental.grace_until"] ?? 0);
+	}
+
+	public function setRentGraceUntil(int $timestamp) : bool {
+		$this->flags["rental.grace_until"] = $timestamp;
+		return MyPlot::getInstance()->savePlot($this);
 	}
 
 	/**

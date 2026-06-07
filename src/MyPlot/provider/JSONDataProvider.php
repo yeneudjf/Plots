@@ -142,6 +142,27 @@ class JSONDataProvider extends DataProvider {
 		return $ownerPlots;
 	}
 
+	public function getAllPlots(string $levelName = "") : array {
+		$plots = $this->json->get("plots", []);
+		$returnPlots = [];
+		foreach($plots as $key => $plotData) {
+			if($levelName !== "" and $plotData["level"] !== $levelName) {
+				continue;
+			}
+			$plotName = (string)$plotData["name"];
+			$owner = (string)$plotData["owner"];
+			$helpers = (array)$plotData["helpers"];
+			$denied = (array)$plotData["denied"];
+			$biome = strtoupper($plotData["biome"]);
+			$pvp = (bool)$plotData["pvp"];
+			$price = (float)$plotData["price"];
+			$merged_plots = (array)$plotData["merged_plots"];
+			$flags = (array)$plotData["flags"];
+			$returnPlots[] = new Plot($plotData["level"], $plotData["x"], $plotData["z"], $plotName, $owner, $helpers, $denied, $biome, $pvp, $price, $merged_plots, $flags, $key);
+		}
+		return $returnPlots;
+	}
+
 	public function getNextFreePlot(string $levelName, int $limitXZ = 0) : ?Plot {
 		$plotsArr = $this->json->get("plots", []);
 		for($i = 0; $limitXZ <= 0 or $i < $limitXZ; $i++) {

@@ -183,6 +183,41 @@ class MySQLProvider extends DataProvider
 		return $plots;
 	}
 
+	public function getAllPlots(string $levelName = "") : array {
+		$this->reconnect();
+		$plots = [];
+		$query = "SELECT * FROM plots";
+		$params = [];
+		if($levelName !== "") {
+			$query .= " WHERE level = ?";
+			$params[] = $levelName;
+		}
+		$stmt = $this->db->prepare($query);
+		if($stmt === false) {
+			return $plots;
+		}
+		if(count($params) > 0) {
+			$stmt->bind_param('s', $params[0]);
+		}
+		$result = $stmt->execute();
+		if($result === false) {
+			$this->plugin->getLogger()->error($stmt->error);
+			return $plots;
+		}
+		$result = $stmt->get_result();
+		while($result !== false and ($val = $result->fetch_array()) !== null) {
+			$helpers = $val["helpers"] === '' ? [] : explode(",", (string) $val["helpers"]);
+			$denied = $val["denied"] === '' ? [] : explode(",", (string) $val["denied"]);
+			$pvp = is_numeric($val["pvp"]) ? (bool)$val["pvp"] : null;
+            $merged_plots = $val["merged_plots"] === '' ? [] : explode(",", (string) $val["merged_plots"]);
+            if ($val['flags'] === '{}' or $val['flags'] === '') {
+                $flags = [];
+            } else $flags = json_decode($val['flags'], true);
+			$plots[] = new Plot((string) $val["level"], (int) $val["X"], (int) $val["Z"], (string) $val["name"], (string) $val["owner"], $helpers, $denied, (string) $val["biome"], $pvp, (float) $val["price"], $merged_plots, $flags, (int) $val["id"]);
+		}
+		return $plots;
+	}
+
 	public function getNextFreePlot(string $levelName, int $limitXZ = 0) : ?Plot {
 		$this->reconnect();
 		$i = 0;

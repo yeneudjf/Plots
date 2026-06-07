@@ -90,6 +90,29 @@ DefaultWorld:
   # How much it costs to clone a plot (Economy must be set to 'true')
   ClonePrice: 0
 
+  # Rental system settings
+  RentalSystem:
+    Enabled: false
+    PaymentPeriodDays: 7
+    GracePeriodDays: 3
+    DefaultPlotType: small
+    PlotTypes:
+      small:
+        RentPrice: 10.0
+        ClaimPrice: 100.0
+      medium:
+        RentPrice: 18.0
+        ClaimPrice: 200.0
+      large:
+        RentPrice: 32.0
+        ClaimPrice: 350.0
+      commercial:
+        RentPrice: 50.0
+        ClaimPrice: 600.0
+      premium:
+        RentPrice: 80.0
+        ClaimPrice: 1000.0
+
   # The size of a plot
   PlotSize: 32
   # The height of a plot
