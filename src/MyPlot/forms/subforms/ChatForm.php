@@ -15,8 +15,17 @@ class ChatForm extends ComplexMyPlotForm {
 
         if(!isset($this->plot))
             $this->plot = $plugin->getPlotByPosition($player->getPosition());
-        if(!isset($this->plot))
+        if(!isset($this->plot)) {
+            parent::__construct(
+                $plugin->getLanguage()->get("error"),
+                [],
+                function(Player $player, $response) : void {
+                },
+                function(Player $player) : void {
+                }
+            );
             return;
+        }
 
         parent::__construct(
             TextFormat::BLACK.$plugin->getLanguage()->translateString("form.header", [$plugin->getLanguage()->get("chat.form")]),

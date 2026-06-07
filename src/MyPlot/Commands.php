@@ -8,7 +8,6 @@ use MyPlot\subcommand\AddHelperSubCommand;
 use MyPlot\subcommand\AutoSubCommand;
 use MyPlot\subcommand\BiomeSubCommand;
 use MyPlot\subcommand\BorderSubCommand;
-use MyPlot\subcommand\BuySubCommand;
 use MyPlot\subcommand\ChatSubCommand;
 use MyPlot\subcommand\ClaimSubCommand;
 use MyPlot\subcommand\ClearSubCommand;
@@ -77,9 +76,6 @@ class Commands extends Command implements PluginOwned
 		$this->loadSubCommand(new AutoSubCommand($plugin, "auto"));
         $this->loadSubCommand(new BiomeSubCommand($plugin, "biome"));
         $this->loadSubCommand(new BorderSubCommand($plugin, "border"));
-        if($plugin->getEconomyProvider() !== null) {
-            $this->loadSubCommand(new BuySubCommand($plugin, "buy"));
-        }
         $this->loadSubCommand(new ChatSubCommand($plugin, "chat"));
         $this->loadSubCommand(new ClaimSubCommand($plugin, "claim"));
 		$this->loadSubCommand(new ClearSubCommand($plugin, "clear"));

@@ -84,8 +84,6 @@ permissions:
     default: true
   myplot.command.sell:
     default: true
-  myplot.command.buy:
-    default: true
   myplot.command.border:
     default: true
   myplot.command.wall:
@@ -151,8 +149,6 @@ permissions:
   myplot.admin.clone:
     default: op
   myplot.admin.sell:
-    default: op
-  myplot.admin.buy:
     default: op
   myplot.admin.border:
     default: op

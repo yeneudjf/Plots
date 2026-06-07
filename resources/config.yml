@@ -10,11 +10,12 @@
 #########################################
 
 # The language that should be used in MyPlot
-# Available languages: eng, deu
+# Available languages: eng, deu, es
 #
 # English language pack by @jasonwynn10
 # German language pack by @morpheusTP and @SalmonGER
-Language: deu
+# Spanish language pack by PlotSquaredPM
+Language: es
 
 # Allows editing language file as a config
 # This is not recommended unless you have a good text editor!

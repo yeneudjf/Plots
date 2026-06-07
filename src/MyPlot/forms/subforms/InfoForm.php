@@ -12,8 +12,18 @@ class InfoForm extends SimpleMyPlotForm {
 	public function __construct(Player $player) {
         if(!isset($this->plot))
             $this->plot = MyPlot::getInstance()->getPlotByPosition($player->getPosition());
-        if(!isset($this->plot))
+        if(!isset($this->plot)) {
+            parent::__construct(
+                MyPlot::getInstance()->getLanguage()->get("error"),
+                MyPlot::getInstance()->getLanguage()->get("notinplot"),
+                [MyPlot::getInstance()->getLanguage()->get("form.close")],
+                function(Player $player, int $selected) : void {
+                },
+                function(Player $player) : void {
+                }
+            );
             return;
+        }
 
         if (MyPlot::getInstance()->getServer()->getPlayerExact($this->plot->owner)) {
             $owner = $this->plot->owner . " §a(Online)";

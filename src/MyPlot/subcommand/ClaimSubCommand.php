@@ -55,17 +55,21 @@ class ClaimSubCommand extends SubCommand
 			$sender->sendMessage(MyPlot::getPrefix() . TextFormat::RED . $this->translateString("claim.maxplots", [$maxPlots]));
 			return true;
 		}
-		$economy = $this->getPlugin()->getEconomyProvider();
-		if($economy !== null and !$economy->reduceMoney($sender, $plot->price)) {
-			$sender->sendMessage(MyPlot::getPrefix() . TextFormat::RED . $this->translateString("claim.nomoney"));
-			return true;
-		}
-		if($type !== "" && $this->getPlugin()->isRentalEnabled()) {
+		if($this->getPlugin()->isRentalEnabled()) {
 			$plotTypes = $this->getPlugin()->getConfig()->getNested("RentalSystem.PlotTypes", []);
+			if($type === "") {
+				$type = $this->getPlugin()->getDefaultPlotType();
+			}
 			if(!isset($plotTypes[$type])) {
 				$sender->sendMessage(MyPlot::getPrefix() . TextFormat::RED . $this->translateString("claim.invalidtype", [$type]));
 				return true;
 			}
+			$plot->price = isset($plotTypes[$type]["ClaimPrice"]) ? (float)$plotTypes[$type]["ClaimPrice"] : $plot->price;
+		}
+		$economy = $this->getPlugin()->getEconomyProvider();
+		if($economy !== null and !$economy->reduceMoney($sender, $plot->price)) {
+			$sender->sendMessage(MyPlot::getPrefix() . TextFormat::RED . $this->translateString("claim.nomoney"));
+			return true;
 		}
 		if($this->getPlugin()->claimPlot($plot, $sender->getName(), $name, $type)) {
 			$sender->sendMessage(MyPlot::getPrefix() . $this->translateString("claim.success"));

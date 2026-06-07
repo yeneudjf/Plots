@@ -11,7 +11,18 @@ use pocketmine\utils\TextFormat;
 class RentConfirmForm extends SimpleMyPlotForm {
     public function __construct(Player $player) {
         $this->plot = MyPlot::getInstance()->getPlotByPosition($player->getPosition());
-        if(!isset($this->plot)) return;
+        if(!isset($this->plot)) {
+            parent::__construct(
+                MyPlot::getInstance()->getLanguage()->get("error"),
+                MyPlot::getInstance()->getLanguage()->get("notinplot"),
+                [MyPlot::getInstance()->getLanguage()->get("form.close")],
+                function(Player $player, int $selected) : void {
+                },
+                function(Player $player) : void {
+                }
+            );
+            return;
+        }
 
         $amount = number_format($this->plot->getRentAmount(), 2);
         $title = MyPlot::getInstance()->getLanguage()->get("rent.confirm.title");
